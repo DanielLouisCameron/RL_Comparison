@@ -10,7 +10,10 @@ python -m pip install -r requirements.txt
 ```
 
 ## To run:
-python main.py --mode (train or experiment or eval)
+python main.py --mode MODE
+MODE can be train, expirment (default), eval or data
+for data you can add --symbol STOCK_SYMBOL
+it defaults to AAPL
 
 
 ## Rough Idea
