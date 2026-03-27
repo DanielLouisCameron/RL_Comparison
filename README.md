@@ -1,6 +1,8 @@
 # RL Project 4453
 
-# Development
+## Development
+
+run this in root dir
 
 ```bash
 .\.venv\Scripts\Activate
