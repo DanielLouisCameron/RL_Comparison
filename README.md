@@ -1,5 +1,12 @@
 # RL Project 4453
 
+# Development
+
+```bash
+.\.venv\Scripts\Activate
+python -m pip install -r requirements.txt
+```
+
 ## To run:
 python main.py --mode (train or experiment or eval)
 
