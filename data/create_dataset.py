@@ -1,70 +1,81 @@
+import json
 from pathlib import Path
+
 import pandas as pd
 import yfinance as yf
-from helpers.logger import Logger
-
-RAW_DIR = Path("data/raw")
-PROCESSED_DIR = Path("data/processed")
 
 
-def download_data(symbol: str, start: str = "2025-01-01", end: str = "2026-01-01") -> pd.DataFrame:
+def load_config(config_path):
+    with open(config_path, "r") as f:
+        return json.load(f)
+
+
+def download_data(symbol, start, end):
     df = yf.download(symbol, start=start, end=end, auto_adjust=True)
-    if df.empty:
-        raise ValueError("No data for symbol %s", symbol)
-    
-    # flatten multiIndex return
-    df.columns = [col[0] for col in df.columns]
 
+    if df.empty:
+        raise ValueError(f"No data for symbol {symbol}")
+
+    df.columns = [col[0] for col in df.columns]
     df = df.reset_index()
     df.columns = [str(col).lower().replace(" ", "_") for col in df.columns]
+
     return df
 
 
-def add_features(df: pd.DataFrame) -> pd.DataFrame:
+def add_features(df, feature_cfg):
     df = df.copy()
 
     df["daily_return"] = df["close"].pct_change()
-    df["ma_5"] = df["close"].rolling(5).mean()
-    df["ma_20"] = df["close"].rolling(20).mean()
-    df["ma_60"] = df["close"].rolling(60).mean()
-    df["volatility_20"] = df["daily_return"].rolling(20).std()
-    df["momentum_5"] = df["close"] / df["close"].shift(5) - 1
 
-    df = df.dropna().reset_index(drop=True)
-    return df
+    for w in feature_cfg["ma_windows"]:
+        df[f"ma_{w}"] = df["close"].rolling(w).mean()
+
+    df[f"volatility_{feature_cfg['volatility_window']}"] = df["daily_return"].rolling(
+        feature_cfg["volatility_window"]
+    ).std()
+
+    df[f"momentum_{feature_cfg['momentum_window']}"] = (
+        df["close"] / df["close"].shift(feature_cfg["momentum_window"]) - 1
+    )
+
+    return df.dropna().reset_index(drop=True)
 
 
-def split_dataset(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def split_dataset(df, split_cfg):
     n = len(df)
-    train_end = int(n * 0.7)
-    val_end = int(n * 0.85)
 
-    train_df = df.iloc[:train_end].copy()
-    val_df = df.iloc[train_end:val_end].copy()
-    test_df = df.iloc[val_end:].copy()
+    train_end = int(n * split_cfg["train_ratio"])
+    val_end = int(n * (split_cfg["train_ratio"] + split_cfg["val_ratio"]))
 
-    return train_df, val_df, test_df
+    train = df.iloc[:train_end]
+    val = df.iloc[train_end:val_end]
+    test = df.iloc[val_end:]
 
-
-def main(stock_symbol):
-    symbol = stock_symbol
-    logger = Logger("dataset")
-
-    df = download_data(symbol=symbol)
-    raw_path = RAW_DIR / f"{symbol.lower()}_raw.csv"
-    df.to_csv(raw_path, index=False)
-
-    featured_df = add_features(df)
-
-    train_df, val_df, test_df = split_dataset(featured_df)
-
-    train_df.to_csv(PROCESSED_DIR / f"{symbol.lower()}_train.csv", index=False)
-    val_df.to_csv(PROCESSED_DIR / f"{symbol.lower()}_val.csv", index=False)
-    test_df.to_csv(PROCESSED_DIR / f"{symbol.lower()}_test.csv", index=False)
-
-    logger.info("Saved new dataset")
-    
+    return train, val, test
 
 
-if __name__ == "__main__":
-    main()
+def create_dataset(config_path):
+    cfg = load_config(config_path)
+
+    symbol = cfg["symbol"]
+
+    raw_dir = Path(cfg["paths"]["raw_dir"])
+    processed_dir = Path(cfg["paths"]["processed_dir"])
+
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    processed_dir.mkdir(parents=True, exist_ok=True)
+
+    df = download_data(symbol, cfg["start_date"], cfg["end_date"])
+
+    df.to_csv(raw_dir / f"{symbol.lower()}_raw.csv", index=False)
+
+    df = add_features(df, cfg["features"])
+
+    train, val, test = split_dataset(df, cfg["split"])
+
+    train.to_csv(processed_dir / f"{symbol.lower()}_train.csv", index=False)
+    val.to_csv(processed_dir / f"{symbol.lower()}_val.csv", index=False)
+    test.to_csv(processed_dir / f"{symbol.lower()}_test.csv", index=False)
+
+    print(f"Dataset created for {symbol}")

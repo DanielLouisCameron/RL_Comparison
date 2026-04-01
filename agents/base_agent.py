@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 
 from environment.trading_env import TradingEnvironment
-from configs.config import PORTFOLIO_CASH
 
 
 class BaseAgent:
@@ -13,10 +12,11 @@ class BaseAgent:
     name: str = ""
     algo_cls = None
 
-    def __init__(self, noise: float, seed: int, train_df: pd.DataFrame, **kwargs):
+    def __init__(self, config: dict, noise: float, seed: int, train_df: pd.DataFrame, **kwargs):
+        self.config = config
         self.noise = noise
         self.seed = seed
-        self.env = TradingEnvironment(df=train_df, noise=noise)
+        self.env = TradingEnvironment(df=train_df, config=config, noise=noise)
         self.model = self.algo_cls(
             "MlpPolicy", self.env, seed=seed, verbose=0, **kwargs
         )
@@ -36,9 +36,9 @@ class BaseAgent:
         return cls.algo_cls.load(path)
 
     @staticmethod
-    def evaluate(model, test_df: pd.DataFrame, noise: float = 0.0) -> dict:
+    def evaluate(model, test_df: pd.DataFrame, config: dict, noise: float = 0.0) -> dict:
         """Run a trained model on test data and return performance metrics."""
-        env = TradingEnvironment(df=test_df, noise=noise)
+        env = TradingEnvironment(df=test_df, config=config, noise=noise)
         obs, info = env.reset()
 
         total_reward = 0.0
@@ -60,12 +60,16 @@ class BaseAgent:
         peak = np.maximum.accumulate(portfolio_values)
         drawdowns = (peak - portfolio_values) / (peak + 1e-8)
 
+        initial_cash = config["portfolio"]["initial_cash"]
+
         return {
             "final_value": portfolio_values[-1],
-            "roi": (portfolio_values[-1] - PORTFOLIO_CASH) / PORTFOLIO_CASH,
-            "sharpe_ratio": np.mean(daily_returns) / (np.std(daily_returns) + 1e-8) * np.sqrt(252),
-            "max_drawdown": np.max(drawdowns),
+            "roi": (portfolio_values[-1] - initial_cash) / initial_cash,
+            "total_return_pct": (portfolio_values[-1] - initial_cash) / initial_cash * 100,
+            "sharpe_ratio": float(np.mean(daily_returns) / (np.std(daily_returns) + 1e-8) * np.sqrt(252)),
+            "max_drawdown": float(np.max(drawdowns)),
             "total_reward": total_reward,
+            "steps": len(actions_taken),
             "portfolio_values": portfolio_values.tolist(),
             "actions": actions_taken,
         }
