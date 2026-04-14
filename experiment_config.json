@@ -1,0 +1,15 @@
+{
+  "paths": {
+    "data_dir": "data"
+  },
+  "portfolio": {
+    "initial_cash": 10000,
+    "transaction_cost": 0.001
+  },
+  "experiment": {
+    "groups": ["large_cap", "mid_cap", "small_cap"],
+    "agents": ["ppo", "dqn", "a2c"],
+    "seeds": [1, 2, 3],
+    "train_timesteps": 10000
+  }
+}

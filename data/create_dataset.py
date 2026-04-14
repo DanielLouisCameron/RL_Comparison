@@ -17,6 +17,7 @@ def download_data(symbol, start, end):
         raise ValueError(f"No data for symbol {symbol}")
 
     df.columns = [col[0] for col in df.columns]
+
     df = df.reset_index()
     df.columns = [str(col).lower().replace(" ", "_") for col in df.columns]
 
@@ -31,9 +32,9 @@ def add_features(df, feature_cfg):
     for w in feature_cfg["ma_windows"]:
         df[f"ma_{w}"] = df["close"].rolling(w).mean()
 
-    df[f"volatility_{feature_cfg['volatility_window']}"] = df["daily_return"].rolling(
-        feature_cfg["volatility_window"]
-    ).std()
+    df[f"volatility_{feature_cfg['volatility_window']}"] = (
+        df["daily_return"].rolling(feature_cfg["volatility_window"]).std()
+    )
 
     df[f"momentum_{feature_cfg['momentum_window']}"] = (
         df["close"] / df["close"].shift(feature_cfg["momentum_window"]) - 1
@@ -58,24 +59,30 @@ def split_dataset(df, split_cfg):
 def create_dataset(config_path):
     cfg = load_config(config_path)
 
-    symbol = cfg["symbol"]
+    symbols = {
+        "large_cap": ["AAPL", "NVDA", "AMZN", "GOOG"],
+        "mid_cap": ["CELH", "WEN", "CMC", "RELY"],
+        "small_cap": ["DOCN", "LAC", "RDW", "GENI"],
+    }
 
-    raw_dir = Path(cfg["paths"]["raw_dir"])
-    processed_dir = Path(cfg["paths"]["processed_dir"])
+    raw_dir = Path("data/raw_data")
 
-    raw_dir.mkdir(parents=True, exist_ok=True)
-    processed_dir.mkdir(parents=True, exist_ok=True)
+    for size, ticker_list in symbols.items():
+        size_dir = Path("data") / size
 
-    df = download_data(symbol, cfg["start_date"], cfg["end_date"])
+        for symbol in ticker_list:
+            try:
+                df = download_data(symbol, cfg["start_date"], cfg["end_date"])
+                df.to_csv(raw_dir / f"{symbol.lower()}_raw.csv", index=False)
 
-    df.to_csv(raw_dir / f"{symbol.lower()}_raw.csv", index=False)
+                df = add_features(df, cfg["features"])
+                train, val, test = split_dataset(df, cfg["split"])
 
-    df = add_features(df, cfg["features"])
+                train.to_csv(size_dir / f"{symbol.lower()}_train.csv", index=False)
+                val.to_csv(size_dir / f"{symbol.lower()}_val.csv", index=False)
+                test.to_csv(size_dir / f"{symbol.lower()}_test.csv", index=False)
 
-    train, val, test = split_dataset(df, cfg["split"])
+                print(f"Dataset created for {symbol}")
 
-    train.to_csv(processed_dir / f"{symbol.lower()}_train.csv", index=False)
-    val.to_csv(processed_dir / f"{symbol.lower()}_val.csv", index=False)
-    test.to_csv(processed_dir / f"{symbol.lower()}_test.csv", index=False)
-
-    print(f"Dataset created for {symbol}")
+            except Exception as e:
+                print(f"Failed for {symbol}: {e}")
