@@ -59,16 +59,15 @@ def split_dataset(df, split_cfg):
 def create_dataset(config_path):
     cfg = load_config(config_path)
 
-    symbols = {
-        "large_cap": ["AAPL", "NVDA", "AMZN", "GOOG"],
-        "mid_cap": ["CELH", "WEN", "CMC", "RELY"],
-        "small_cap": ["DOCN", "LAC", "RDW", "GENI"],
-    }
+    symbols = cfg["symbols"]
 
-    raw_dir = Path("data/raw_data")
+    raw_dir = Path(cfg["paths"]["raw_dir"])
+    raw_dir.mkdir(parents=True, exist_ok=True)
 
     for size, ticker_list in symbols.items():
         size_dir = Path("data") / size
+        size_dir.mkdir(parents=True, exist_ok=True)
+
 
         for symbol in ticker_list:
             try:
