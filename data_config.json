@@ -1,33 +1,26 @@
 {
-    "symbol": "NVDA",
-    "start_date": "2015-01-01",
-    "end_date": "2026-01-01",
+  "start_date": "2025-01-01",
+  "end_date": "2026-01-01",
 
-    "paths": {
-        "raw_dir": "data_storage/raw",
-        "processed_dir": "data_storage/processed"
-    },
+  "paths": {
+    "raw_dir": "data/raw_data"
+  },
 
-    "features": {
-        "ma_windows": [5, 20, 60],
-        "volatility_window": 20,
-        "momentum_window": 5
-    },
+  "symbols": {
+    "large_cap": ["AAPL", "NVDA", "AMZN", "GOOG"],
+    "mid_cap": ["CELH", "WEN", "CMC", "RELY"],
+    "small_cap": ["DOCN", "LAC", "RDW", "GENI"]
+  },
 
-    "split": {
-        "train_ratio": 0.70,
-        "val_ratio": 0.15,
-        "test_ratio": 0.15
-    },
+  "features": {
+    "ma_windows": [5, 20, 60],
+    "volatility_window": 20,
+    "momentum_window": 5
+  },
 
-    "portfolio": {
-        "initial_cash": 10000,
-        "transaction_cost": 0.001
-    },
-
-    "experiment": {
-        "seeds": [1, 2, 3],
-        "noise_levels": [0.0, 0.05, 0.1, 0.3],
-        "train_timesteps": 100000
-    }
+  "split": {
+    "train_ratio": 0.70,
+    "val_ratio": 0.15,
+    "test_ratio": 0.15
+  }
 }
