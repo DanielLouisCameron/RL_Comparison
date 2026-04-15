@@ -33,6 +33,7 @@ def main():
 
     config_path = Path(args.config)
     results_dir = Path(args.results_dir)
+    results_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Mode:        {args.mode}")
     logger.info(f"Config:      {config_path}")
