@@ -10,7 +10,6 @@ class TradingMetricsCallback(BaseCallback):
         if self.n_calls % self.log_freq == 0:
             env = self.training_env
 
-            # unwrap Monitor if needed
             if hasattr(env, "env"):
                 raw_env = env.env
             else:
@@ -29,14 +28,8 @@ class TradingMetricsCallback(BaseCallback):
                 roi = (portfolio_value - initial_cash) / initial_cash
                 self.logger.record("custom/roi", float(roi))
 
-            if cash is not None:
-                self.logger.record("custom/cash", float(cash))
-
             if position is not None:
                 self.logger.record("custom/position", float(position))
-
-            if num_trades is not None:
-                self.logger.record("custom/num_trades", float(num_trades))
 
             self.logger.dump(self.num_timesteps)
 

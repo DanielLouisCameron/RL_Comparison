@@ -121,16 +121,7 @@ class TradingEnvironment(gym.Env):
 
         info = {
             "portfolio_value": float(self.portfolio_value),
-            "cash": float(cash_value),
-            "stock_amt": float(self.position),
-            "stock_price": float(next_price),
-            "roi": float(roi),
             "action_taken": int(action),
-            "did_trade": bool(did_trade),
-            "trade_value": float(abs(self.position - prev_position) * self.portfolio_value),
-            "cost_paid": 0.0,
-            "entry_price": 0.0,
-            "in_position": bool(self.position > 0.0),
             "symbol": self.df["symbol"].iloc[0] if "symbol" in self.df.columns else "unknown",
         }
 
