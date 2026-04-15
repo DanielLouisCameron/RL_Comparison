@@ -7,7 +7,7 @@
   },
 
   "symbols": {
-    "large_cap": ["AAPL", "NVDA", "AMZN", "GOOG"],
+    "large_cap": ["SMCI", "COIN", "TSLA", "RIVN"],
     "mid_cap": ["CELH", "WEN", "CMC", "RELY"],
     "small_cap": ["DOCN", "LAC", "RDW", "GENI"]
   },

@@ -4,12 +4,17 @@
   },
   "portfolio": {
     "initial_cash": 10000,
-    "transaction_cost": 0.001
+    "transaction_cost": 0.0001,
+    "terminal_bonus_weight": 0.5
   },
   "experiment": {
     "groups": ["large_cap", "mid_cap", "small_cap"],
     "agents": ["ppo", "dqn", "a2c"],
     "seeds": [1, 2, 3],
     "train_timesteps": 10000
+  },
+  "environment": {
+    "window_size": 30,
+    "position_levels": [0.0, 0.5, 1.0]
   }
 }
