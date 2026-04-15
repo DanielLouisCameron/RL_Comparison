@@ -15,9 +15,6 @@ logger = get_logger(__name__)
 
 
 def load_group_data(group_name: str, split: str, data_dir: Path) -> list[pd.DataFrame]:
-    """
-    Load all CSVs for a group and split.
-    """
     group_dir = data_dir / group_name
 
     files = sorted(group_dir.glob(f"*_{split}.csv"))
@@ -70,19 +67,14 @@ def run(config: dict, results_dir: Path = Path("results")):
     for group_name in groups:
         test_dfs = load_group_data(group_name, "test", data_dir)
 
-        logger.info(
-            f"Loaded group '{group_name}' | {len(test_dfs)} test datasets"
-        )
+        logger.info(f"Loaded group '{group_name}' | {len(test_dfs)} test datasets")
 
         for agent_name in agents_to_run:
             AgentClass = get_agent_class(agent_name)
 
             for seed in seeds:
                 current_run += 1
-                logger.info(
-                    f"[{current_run}/{total_runs}] "
-                    f"Evaluating {agent_name.upper()} | group={group_name} | seed={seed}"
-                )
+                logger.info(f"[{current_run}/{total_runs}] Evaluating {agent_name.upper()} | group={group_name} | seed={seed}")
 
                 set_seeds(seed)
 

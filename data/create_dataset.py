@@ -29,18 +29,15 @@ def add_features(df, feature_cfg):
 
     df["daily_return"] = df["close"].pct_change()
 
-    # Momentum
     df["momentum_5"] = df["close"] / df["close"].shift(5) - 1
     df["momentum_20"] = df["close"] / df["close"].shift(20) - 1
 
-    # MA features
     ma_5 = df["close"].rolling(5).mean()
     ma_20 = df["close"].rolling(20).mean()
 
     df["ma_20_ratio"] = ma_20 / df["close"] - 1
     df["ma_5_20_spread"] = ma_5 / ma_20 - 1
 
-    # Volatility
     df["volatility_20"] = df["daily_return"].rolling(20).std()
 
     return df.dropna().reset_index(drop=True)
@@ -76,8 +73,6 @@ def create_dataset(config_path):
             try:
 
                 df = download_data(symbol, cfg["start_date"], cfg["end_date"])
-
-                # df = download_data(symbol, cfg["start_date"], cfg["end_date"]) is old
                 df.to_csv(raw_dir / f"{symbol.lower()}_raw.csv", index=False)
 
                 df = add_features(df, cfg["features"])

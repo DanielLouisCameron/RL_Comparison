@@ -4,6 +4,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from utils.logger import get_logger
+
 
 def load_eval_metrics(metrics_root: str = "results/eval_metrics") -> pd.DataFrame:
     metrics_root = Path(metrics_root)
@@ -79,6 +81,8 @@ def save_per_stock_curves(df: pd.DataFrame, output_dir: Path):
 
 
 def plot_all_results(results_dir):
+
+    logger = get_logger(__name__)
     plots_dir = Path(f"{results_dir}/plots")
     plots_dir.mkdir(parents=True, exist_ok=True)
 
@@ -118,5 +122,5 @@ def plot_all_results(results_dir):
 
     save_per_stock_curves(df, plots_dir / "portfolio_curves")
 
-    print(f"Plots saved to {plots_dir}")
+    logger.info(f"Plots saved to {plots_dir}")
 

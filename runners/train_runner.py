@@ -15,9 +15,6 @@ logger = get_logger(__name__)
 
 
 def load_group_data(group_name: str, split: str, data_dir: Path) -> list[pd.DataFrame]:
-    """
-    Load all CSVs for a group and split.
-    """
     group_dir = data_dir / group_name
 
     files = sorted(group_dir.glob(f"*_{split}.csv"))
@@ -75,20 +72,14 @@ def run(config: dict, results_dir: Path = Path("results")):
         train_dfs = load_group_data(group_name, "train", data_dir)
         test_dfs = load_group_data(group_name, "test", data_dir)
 
-        logger.info(
-            f"Loaded group '{group_name}' | "
-            f"{len(train_dfs)} train datasets | {len(test_dfs)} test datasets"
-        )
+        logger.info(f"Loaded group '{group_name}' | {len(train_dfs)} train datasets | {len(test_dfs)} test datasets")
 
         for agent_name in agents_to_run:
             AgentClass = get_agent_class(agent_name)
 
             for seed in seeds:
                 current_run += 1
-                logger.info(
-                    f"[{current_run}/{total_runs}] "
-                    f"Training {agent_name.upper()} | group={group_name} | seed={seed}"
-                )
+                logger.info(f"[{current_run}/{total_runs}] Training {agent_name.upper()} | group={group_name} | seed={seed}")
 
                 set_seeds(seed)
 
@@ -105,6 +96,6 @@ def run(config: dict, results_dir: Path = Path("results")):
 
                 model_path = agent_instance.save(str(model_dir))
 
-                logger.info(f"Saved model: {model_path} | ")
+                logger.info(f"Saved model: {model_path}")
 
     logger.info("All training runs complete.")

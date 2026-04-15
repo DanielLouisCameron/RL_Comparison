@@ -7,7 +7,7 @@ import pandas as pd
 
 class TradingEnvironment(gym.Env):
     """
-    Simple 3-action trading environment.
+    3-action trading environment.
 
     Actions:
         0 = 0% invested
@@ -24,7 +24,7 @@ class TradingEnvironment(gym.Env):
         super().__init__()
 
         if not dfs:
-            raise ValueError("Need at least one dataframe.")
+            raise ValueError("Need stock data.")
 
         self.dfs = [df.reset_index(drop=True) for df in dfs]
         self.current_df_idx = -1
@@ -122,7 +122,7 @@ class TradingEnvironment(gym.Env):
         info = {
             "portfolio_value": float(self.portfolio_value),
             "cash": float(cash_value),
-            "stock_amt": float(self.position),  # placeholder, not literal shares
+            "stock_amt": float(self.position),
             "stock_price": float(next_price),
             "roi": float(roi),
             "action_taken": int(action),

@@ -3,10 +3,10 @@ import sys
 from pathlib import Path
 
 
-def get_logger(name, log_file=None, level=logging.INFO):
+def get_logger(name, level=logging.INFO):
     """
-    Returns a logger that writes to stdout and optionally to a file.
-    Call once per module: logger = get_logger(__name__)
+    Returns a logger that writes to stdout.
+    Call once per module with logger = get_logger(__name__)
     """
     logger = logging.getLogger(name)
 
@@ -23,13 +23,6 @@ def get_logger(name, log_file=None, level=logging.INFO):
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
-
-    if log_file is not None:
-        log_file = Path(log_file)
-        log_file.parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
 
     logger.propagate = False
 
