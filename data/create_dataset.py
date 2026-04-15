@@ -10,7 +10,7 @@ def load_config(config_path):
         return json.load(f)
 
 
-def download_data(symbol, start, end):
+def download_data(symbol, start, end):    
     df = yf.download(symbol, start=start, end=end, auto_adjust=True)
 
     if df.empty:
@@ -71,7 +71,18 @@ def create_dataset(config_path):
 
         for symbol in ticker_list:
             try:
-                df = download_data(symbol, cfg["start_date"], cfg["end_date"])
+                if cfg.get("data_source") == "synthetic":
+                    df = generate_synthetic_data(
+                        symbol=symbol,
+                        start_date=cfg["start_date"],
+                        n_steps=cfg["synthetic"]["n_steps"],
+                        start_price=cfg["synthetic"]["start_price"],
+                        seed=cfg["synthetic"]["seed"],
+                    )
+                else:
+                    df = download_data(symbol, cfg["start_date"], cfg["end_date"])
+
+                # df = download_data(symbol, cfg["start_date"], cfg["end_date"]) is old
                 df.to_csv(raw_dir / f"{symbol.lower()}_raw.csv", index=False)
 
                 df = add_features(df, cfg["features"])
@@ -85,3 +96,95 @@ def create_dataset(config_path):
 
             except Exception as e:
                 print(f"Failed for {symbol}: {e}")
+
+
+
+import numpy as np
+import pandas as pd
+
+
+def generate_synthetic_data(
+    symbol: str,
+    start_date: str,
+    n_steps: int = 252,
+    start_price: float = 100.0,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """
+    Generate synthetic OHLCV data for debugging a trading RL environment.
+
+    Supported symbols:
+    - SYNTH_UP      : upward drift
+    - SYNTH_DOWN    : downward drift
+    - SYNTH_MR      : mean-reverting prices
+    - SYNTH_CYCLE   : cyclical / oscillating
+    - SYNTH_REGIME  : changing market regimes
+    - anything else : random walk
+    """
+    rng = np.random.default_rng(seed + abs(hash(symbol)) % 10_000)
+    dates = pd.bdate_range(start=start_date, periods=n_steps)
+
+    if symbol == "SYNTH_MR":
+        prices = [start_price]
+        kappa = 0.15   # pull back toward mean
+        sigma = 1.5
+        mu = start_price
+
+        for _ in range(1, n_steps):
+            prev = prices[-1]
+            next_price = prev + kappa * (mu - prev) + rng.normal(0, sigma)
+            prices.append(max(1.0, next_price))
+
+        close = np.array(prices)
+
+    else:
+        returns = np.zeros(n_steps)
+
+        if symbol == "SYNTH_UP":
+            returns = rng.normal(loc=0.001, scale=0.015, size=n_steps)
+
+        elif symbol == "SYNTH_DOWN":
+            returns = rng.normal(loc=-0.001, scale=0.015, size=n_steps)
+
+        elif symbol == "SYNTH_CYCLE":
+            t = np.arange(n_steps)
+            returns = (
+                0.01 * np.sin(2 * np.pi * t / 30)
+                + rng.normal(loc=0.0, scale=0.01, size=n_steps)
+            )
+
+        elif symbol == "SYNTH_REGIME":
+            q = n_steps // 4
+            returns = np.concatenate(
+                [
+                    rng.normal(0.001, 0.01, q),                 # uptrend
+                    rng.normal(0.0, 0.005, q),                  # flat
+                    rng.normal(-0.001, 0.015, q),               # downtrend
+                    rng.normal(0.0, 0.03, n_steps - 3 * q),     # volatile
+                ]
+            )
+
+        else:
+            # fallback: random walk
+            returns = rng.normal(loc=0.0, scale=0.02, size=n_steps)
+
+        close = start_price * np.cumprod(1 + returns)
+        close = np.maximum(close, 1.0)
+
+    open_ = close * (1 + rng.normal(0, 0.002, n_steps))
+    high = np.maximum(open_, close) * (1 + rng.uniform(0.001, 0.01, n_steps))
+    low = np.minimum(open_, close) * (1 - rng.uniform(0.001, 0.01, n_steps))
+    volume = rng.integers(100_000, 1_000_000, n_steps)
+
+    df = pd.DataFrame(
+        {
+            "date": dates,
+            "open": open_,
+            "high": high,
+            "low": low,
+            "close": close,
+            "volume": volume,
+        }
+    )
+
+    return df

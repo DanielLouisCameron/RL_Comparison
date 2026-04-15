@@ -3,7 +3,14 @@ import os
 import numpy as np
 import pandas as pd
 
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.callbacks import CallbackList
+
 from environment.trading_env import TradingEnvironment
+from utils.training_callbacks import TradingMetricsCallback
+
+from collections import Counter
+
 
 
 class BaseAgent:
@@ -15,13 +22,27 @@ class BaseAgent:
     def __init__(self, config: dict, seed: int, train_dfs: list[pd.DataFrame], **kwargs):
         self.config = config
         self.seed = seed
-        self.env = TradingEnvironment(dfs=train_dfs, config=config)
+        self.env = Monitor(TradingEnvironment(dfs=train_dfs, config=config))
         self.model = self.algo_cls(
-            "MlpPolicy", self.env, seed=seed, verbose=0, **kwargs
+            "MlpPolicy",
+            self.env,
+            seed=seed,
+            verbose=1,
+            tensorboard_log="results/tb_logs/",
+            **kwargs
         )
 
     def train(self, timesteps: int):
-        self.model.learn(total_timesteps=timesteps)
+        callbacks = CallbackList([
+            TradingMetricsCallback(log_freq=1000),
+        ])
+
+        self.model.learn(
+            total_timesteps=timesteps,
+            callback=callbacks,
+            tb_log_name=f"{self.name}_seed_{self.seed}",
+            progress_bar=True,
+        )
 
     def save(self, results_dir: str) -> str:
         os.makedirs(results_dir, exist_ok=True)
@@ -58,6 +79,10 @@ class BaseAgent:
                 actions_taken.append(info["action_taken"])
                 done = terminated or truncated
 
+            action_counts = Counter(actions_taken)
+            print(f"Symbol: {info.get('symbol', 'unknown')} | action counts: {action_counts}")
+
+
             portfolio_values = np.array(portfolio_values)
             daily_returns = np.diff(portfolio_values) / (portfolio_values[:-1] + 1e-8)
 
@@ -81,6 +106,7 @@ class BaseAgent:
                 "steps": len(actions_taken),
                 "portfolio_values": portfolio_values.tolist(),
                 "actions": actions_taken,
+                "action_counts": dict(action_counts),
             })
 
         total_stocks = len(per_stock_results)
