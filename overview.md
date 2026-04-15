@@ -21,7 +21,7 @@ python main.py --config data_config.json --mode MODE
 | Mode | What it does |
 |------|-------------|
 | `data` | Downloads stock data and splits into train/validation/test |
-| `train` | Trains PPO, DQN, A2C across all types of stock sizes (eg blue chip) and seeds, saves models + result JSONs |
+| `train` | Trains PPO, DQN, and A2C across all stock groups (e.g., large-cap, mid-cap, small-cap) and seeds |
 | `eval` | Loads already-trained models and re-evaluates them on test data |
 | `plot` | Plots graphs of all evals focusing on portfolio values and overarching trends |
 
@@ -30,6 +30,9 @@ python main.py --config data_config.json --mode MODE
 ```bash
 # 1. Get the data first (only need to do this once)
 python main.py --config data_config.json --mode data
+
+# 2. (Optional) Start tensorboard for training insights
+tensorboard --logdir results/tb_logs
 
 # 3. Train all agents (this takes a while with 100k timesteps)
 python main.py --config experiment_config.json --mode train
@@ -41,6 +44,8 @@ python main.py --config experiment_config.json --mode eval
 python main.py --config experiment_config.json --mode plot
 
 ```
+
+You will be able to see training insights from tensorboard on http://localhost:6006
 
 ## Project structure
 
