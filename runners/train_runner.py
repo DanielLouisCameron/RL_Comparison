@@ -58,10 +58,8 @@ def run(config: dict, results_dir: Path = Path("results")):
     """
     results_dir = Path(results_dir)
     models_dir = results_dir / "models"
-    metrics_dir = results_dir / "metrics"
 
     models_dir.mkdir(parents=True, exist_ok=True)
-    metrics_dir.mkdir(parents=True, exist_ok=True)
 
     data_dir = Path(config["paths"]["data_dir"])
     groups = config["experiment"]["groups"]
@@ -107,43 +105,6 @@ def run(config: dict, results_dir: Path = Path("results")):
 
                 model_path = agent_instance.save(str(model_dir))
 
-                metrics = BaseAgent.evaluate(
-                    model=agent_instance.model,
-                    test_dfs=test_dfs,
-                    config=config,
-                )
-
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                metrics_path = (
-                    metrics_dir
-                    / group_name
-                    / agent_name
-                    / f"seed_{seed}_{timestamp}.json"
-                )
-
-                result = {
-                    "run_type": agent_name.upper(),
-                    "group": group_name,
-                    "seed": seed,
-                    "timestamp": datetime.now().isoformat(),
-                    "final_value": round(metrics["final_value"], 2),
-                    "roi": round(metrics["roi"], 6),
-                    "total_return_pct": round(metrics["total_return_pct"], 4),
-                    "sharpe_ratio": round(metrics["sharpe_ratio"], 4),
-                    "max_drawdown": round(metrics["max_drawdown"], 4),
-                    "total_reward": round(metrics["total_reward"], 4),
-                    "avg_steps": metrics["avg_steps"],
-                    "num_stocks_evaluated": metrics["num_stocks_evaluated"],
-                    "per_stock_results": metrics["per_stock_results"],
-                    "model_path": model_path,
-                }
-
-                save_json(result, metrics_path)
-
-                logger.info(
-                    f"Saved model: {model_path} | "
-                    f"Final value: ${metrics['final_value']:,.2f} | "
-                    f"ROI: {metrics['total_return_pct']:.2f}%"
-                )
+                logger.info(f"Saved model: {model_path} | ")
 
     logger.info("All training runs complete.")

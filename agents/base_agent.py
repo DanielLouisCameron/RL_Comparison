@@ -8,6 +8,7 @@ from stable_baselines3.common.callbacks import CallbackList
 
 from environment.trading_env import TradingEnvironment
 from utils.training_callbacks import TradingMetricsCallback
+from utils.logger import get_logger
 
 from collections import Counter
 
@@ -60,10 +61,13 @@ class BaseAgent:
         """
         Evaluate the model on ALL stocks in test_dfs and average the scalar metrics.
         """
-        per_stock_results = []
 
-        for df in test_dfs:
-            env = TradingEnvironment(dfs=[df], config=config)
+        logger = get_logger(__name__)
+
+        per_stock_results = []
+        env = TradingEnvironment(dfs=test_dfs, config=config)
+
+        for _ in test_dfs:
             obs, info = env.reset()
 
             total_reward = 0.0
@@ -80,7 +84,7 @@ class BaseAgent:
                 done = terminated or truncated
 
             action_counts = Counter(actions_taken)
-            print(f"Symbol: {info.get('symbol', 'unknown')} | action counts: {action_counts}")
+            logger.info(f"Symbol: {info.get('symbol', 'unknown')} | action counts: {action_counts}")
 
 
             portfolio_values = np.array(portfolio_values)

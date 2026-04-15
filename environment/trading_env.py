@@ -16,9 +16,6 @@ class TradingEnvironment(gym.Env):
 
     Reward:
         position_fraction * next-step return
-
-    Designed to stay compatible with the existing pipeline by returning
-    the same info keys as the older env.
     """
 
     metadata = {"render_modes": []}
@@ -29,7 +26,10 @@ class TradingEnvironment(gym.Env):
         if not dfs:
             raise ValueError("Need at least one dataframe.")
 
-        self.df = dfs[0].reset_index(drop=True)
+        self.dfs = [df.reset_index(drop=True) for df in dfs]
+        self.current_df_idx = -1
+        self.df = self.dfs[0]
+
         self.initial_cash = float(config["portfolio"]["initial_cash"]) if config else 10000.0
 
         self.feature_cols = [
@@ -62,6 +62,9 @@ class TradingEnvironment(gym.Env):
     def reset(self, seed: Optional[int] = None, options: Optional[dict] = None):
         super().reset(seed=seed)
 
+        self.current_df_idx = (self.current_df_idx + 1) % len(self.dfs)
+        self.df = self.dfs[self.current_df_idx]
+
         self.counter = 0
         self.position = 0.0
         self.portfolio_value = self.initial_cash
@@ -81,7 +84,7 @@ class TradingEnvironment(gym.Env):
             "cost_paid": 0.0,
             "entry_price": 0.0,
             "in_position": False,
-            "symbol": self.df["symbol"].iloc[0] if "symbol" in self.df.columns else "unknown",
+            "symbol": self.df["symbol"].iloc[0],
         }
         return obs, info
 
@@ -99,13 +102,13 @@ class TradingEnvironment(gym.Env):
         truncated = False
 
         next_price = float(self.df.iloc[self.counter]["close"])
-        price_return = (next_price - current_price) / max(current_price, 1e-8)
+        price_return = (next_price - current_price) / current_price
 
         reward = float(self.position * price_return)
 
-        self.portfolio_value *= (1.0 + reward)
+        self.portfolio_value *= (1 + reward)
 
-        did_trade = abs(self.position - prev_position) > 1e-12
+        did_trade = self.position != prev_position
 
         if terminated:
             obs = np.zeros(self.observation_space.shape, dtype=np.float32)
@@ -114,8 +117,7 @@ class TradingEnvironment(gym.Env):
 
         roi = (self.portfolio_value - self.initial_cash) / self.initial_cash
 
-        stock_value = self.portfolio_value * self.position
-        cash_value = self.portfolio_value * (1.0 - self.position)
+        cash_value = self.portfolio_value * (1 - self.position)
 
         info = {
             "portfolio_value": float(self.portfolio_value),
