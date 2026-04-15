@@ -8,7 +8,10 @@
   },
 
   "symbols": {
-    "large_cap": ["SYNTH_UP", "SYNTH_DOWN", "SYNTH_MR", "SYNTH_CYCLE"]
+    "large_cap": ["SYNTH_UP"],
+    "mid_cap": ["SYNTH_DOWN"],
+    "small_cap": ["SYNTH_CYCLE"]
+    
   },
 
   "features": {
@@ -24,7 +27,7 @@
   },
 
   "synthetic": {
-    "n_steps": 252,
+    "n_steps": 1000,
     "seed": 42,
     "start_price": 100.0
   }

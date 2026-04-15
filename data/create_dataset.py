@@ -29,16 +29,19 @@ def add_features(df, feature_cfg):
 
     df["daily_return"] = df["close"].pct_change()
 
-    for w in feature_cfg["ma_windows"]:
-        df[f"ma_{w}"] = df["close"].rolling(w).mean()
+    # Momentum
+    df["momentum_5"] = df["close"] / df["close"].shift(5) - 1
+    df["momentum_20"] = df["close"] / df["close"].shift(20) - 1
 
-    df[f"volatility_{feature_cfg['volatility_window']}"] = (
-        df["daily_return"].rolling(feature_cfg["volatility_window"]).std()
-    )
+    # MA features
+    ma_5 = df["close"].rolling(5).mean()
+    ma_20 = df["close"].rolling(20).mean()
 
-    df[f"momentum_{feature_cfg['momentum_window']}"] = (
-        df["close"] / df["close"].shift(feature_cfg["momentum_window"]) - 1
-    )
+    df["ma_20_ratio"] = ma_20 / df["close"] - 1
+    df["ma_5_20_spread"] = ma_5 / ma_20 - 1
+
+    # Volatility
+    df["volatility_20"] = df["daily_return"].rolling(20).std()
 
     return df.dropna().reset_index(drop=True)
 
@@ -87,6 +90,19 @@ def create_dataset(config_path):
 
                 df = add_features(df, cfg["features"])
                 train, val, test = split_dataset(df, cfg["split"])
+                feature_cols = [
+                    "daily_return",
+                    "momentum_5",
+                    "momentum_20",
+                    "ma_20_ratio",
+                    "ma_5_20_spread",
+                    "volatility_20",
+                ]
+
+                stats = fit_normalizer(train, feature_cols)
+                train = apply_normalizer(train, stats)
+                val = apply_normalizer(val, stats)
+                test = apply_normalizer(test, stats)
 
                 train.to_csv(size_dir / f"{symbol.lower()}_train.csv", index=False)
                 val.to_csv(size_dir / f"{symbol.lower()}_val.csv", index=False)
@@ -102,11 +118,34 @@ def create_dataset(config_path):
 import numpy as np
 import pandas as pd
 
+def fit_normalizer(train_df, feature_cols):
+    stats = {}
+
+    for col in feature_cols:
+        mean = train_df[col].mean()
+        std = train_df[col].std()
+
+        if pd.isna(std) or std < 1e-8:
+            std = 1.0
+
+        stats[col] = {"mean": float(mean), "std": float(std)}
+
+    return stats
+
+
+def apply_normalizer(df, stats):
+    df = df.copy()
+
+    for col, s in stats.items():
+        df[col] = (df[col] - s["mean"]) / s["std"]
+
+    return df
+
 
 def generate_synthetic_data(
     symbol: str,
     start_date: str,
-    n_steps: int = 252,
+    n_steps: int = 1000,
     start_price: float = 100.0,
     seed: int = 42,
 ) -> pd.DataFrame:

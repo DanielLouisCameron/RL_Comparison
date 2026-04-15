@@ -27,7 +27,7 @@ class BaseAgent:
             "MlpPolicy",
             self.env,
             seed=seed,
-            verbose=1,
+            verbose=0,
             tensorboard_log="results/tb_logs/",
             **kwargs
         )
