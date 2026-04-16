@@ -13,7 +13,7 @@ pip install -r requirements.txt
 Everything goes through `main.py` with a config file and a mode:
 
 ```bash
-python main.py --config data_config.json --mode MODE
+python main.py --config CONFIG_NAME.json --mode MODE
 ```
 
 ### Modes
@@ -63,8 +63,7 @@ utils/            - logger, config validation, seed setting
 
 ```
 models/        - Saved trained models for each group/model/seed run
-metrics/       - Evaluation results saved immediately after training
-eval_metrics/  - Evaluation results produced by loading saved models and testing again
+eval_metrics/  - Evaluation results produced by running test data split on trained models
 plots/         - Generated graphs
 ```
 
