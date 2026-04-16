@@ -11,7 +11,7 @@
     "groups": ["large_cap", "mid_cap", "small_cap"],
     "agents": ["ppo", "dqn", "a2c"],
     "seeds": [1, 2, 3],
-    "train_timesteps": 10000
+    "train_timesteps": 200000
   },
   "environment": {
     "window_size": 30,
